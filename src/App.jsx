@@ -391,7 +391,7 @@ const BrowserWindow = ({
   );
 };
 
-// Windows XP Style Window Component
+// Windows XP Style Window Component - MOBILE RESPONSIVE
 const XPWindow = ({ 
   children, 
   title, 
@@ -410,9 +410,20 @@ const XPWindow = ({
   const windowRef = useRef();
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleMouseDown = (e) => {
-    if (e.target.closest('button')) return;
+    if (e.target.closest('button') || isMobile) return;
     
     isDragging.current = true;
     dragStart.current = { 
@@ -425,7 +436,7 @@ const XPWindow = ({
   };
 
   const handleMouseMove = (e) => {
-    if (!isDragging.current || isMaximized) return;
+    if (!isDragging.current || isMaximized || isMobile) return;
     
     const newX = e.clientX - dragStart.current.x;
     const newY = e.clientY - dragStart.current.y;
@@ -443,7 +454,7 @@ const XPWindow = ({
   };
 
   const handleDoubleClick = () => {
-    if (!isMaximized) {
+    if (!isMaximized && !isMobile) {
       onMaximize();
     }
   };
@@ -457,6 +468,16 @@ const XPWindow = ({
 
   if (isMinimized) return null;
 
+  // Mobile-optimized window size and position
+  const mobileSize = { 
+    width: window.innerWidth - 20, 
+    height: window.innerHeight - 80 
+  };
+  const mobilePosition = { x: 10, y: 10 };
+
+  const finalSize = isMobile ? mobileSize : size;
+  const finalPosition = isMobile ? mobilePosition : position;
+
   return (
     <motion.div
       ref={windowRef}
@@ -464,10 +485,10 @@ const XPWindow = ({
       animate={{ 
         scale: 1, 
         opacity: 1, 
-        x: isMaximized ? 0 : position.x,
-        y: isMaximized ? 0 : position.y,
-        width: isMaximized ? '100vw' : size.width,
-        height: isMaximized ? '100vh' : size.height
+        x: isMaximized || isMobile ? 0 : finalPosition.x,
+        y: isMaximized || isMobile ? 0 : finalPosition.y,
+        width: isMaximized || isMobile ? '100vw' : finalSize.width,
+        height: isMaximized || isMobile ? '100vh' : finalSize.height
       }}
       exit={{ 
         scale: 0.8, 
@@ -481,33 +502,41 @@ const XPWindow = ({
       }}
       style={{ zIndex }}
       className={`fixed overflow-hidden bg-[#ece9d8] shadow-lg border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 ${
-        isMaximized ? 'rounded-none' : ''
+        (isMaximized || isMobile) ? 'rounded-none' : ''
       }`}
       onMouseDown={onFocus}
     >
       {/* Windows XP Title Bar */}
       <div 
-        className="h-6 flex items-center px-2 bg-gradient-to-b from-[#0a246a] to-[#0a246a] cursor-move select-none text-white text-sm font-bold"
+        className={`flex items-center px-2 bg-gradient-to-b from-[#0a246a] to-[#0a246a] cursor-move select-none text-white text-sm font-bold ${
+          isMobile ? 'h-8' : 'h-6'
+        }`}
         onMouseDown={handleMouseDown}
         onDoubleClick={handleDoubleClick}
       >
         <div className="flex-1 truncate mr-4">{title}</div>
         <div className="flex gap-1">
-          <button 
-            onClick={onMinimize}
-            className="w-4 h-4 bg-[#ece9d8] border border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-gray-200 flex items-center justify-center text-black text-xs font-bold"
-          >
-            <MinIcon />
-          </button>
-          <button 
-            onClick={onMaximize}
-            className="w-4 h-4 bg-[#ece9d8] border border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-gray-200 flex items-center justify-center text-black text-xs font-bold"
-          >
-            {isMaximized ? <RestoreIcon /> : <MaxIcon />}
-          </button>
+          {!isMobile && (
+            <>
+              <button 
+                onClick={onMinimize}
+                className="w-4 h-4 bg-[#ece9d8] border border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-gray-200 flex items-center justify-center text-black text-xs font-bold"
+              >
+                <MinIcon />
+              </button>
+              <button 
+                onClick={onMaximize}
+                className="w-4 h-4 bg-[#ece9d8] border border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-gray-200 flex items-center justify-center text-black text-xs font-bold"
+              >
+                {isMaximized ? <RestoreIcon /> : <MaxIcon />}
+              </button>
+            </>
+          )}
           <button 
             onClick={onClose}
-            className="w-4 h-4 bg-[#ece9d8] border border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-gray-200 flex items-center justify-center text-black text-xs font-bold"
+            className={`bg-[#ece9d8] border border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-gray-200 flex items-center justify-center text-black font-bold ${
+              isMobile ? 'w-6 h-6 text-sm' : 'w-4 h-4 text-xs'
+            }`}
           >
             <CloseIcon />
           </button>
@@ -515,46 +544,48 @@ const XPWindow = ({
       </div>
 
       {/* Window Content */}
-      <div className="h-[calc(100%-1.5rem)] overflow-auto bg-[#ece9d8] p-1 border-2 border-t-gray-300 border-l-gray-300 border-r-white border-b-white">
+      <div className={`overflow-auto bg-[#ece9d8] border-2 border-t-gray-300 border-l-gray-300 border-r-white border-b-white ${
+        isMobile ? 'h-[calc(100%-2rem)] p-2' : 'h-[calc(100%-1.5rem)] p-1'
+      }`}>
         {children}
       </div>
     </motion.div>
   );
 };
 
-// Windows XP Desktop Icon with better visibility
+// Windows XP Desktop Icon with better visibility - MOBILE RESPONSIVE
 const DesktopIcon = ({ iconUrl, label, onClick, isAppOpen }) => {
   return (
     <motion.div
       className={`flex flex-col items-center cursor-pointer p-2 rounded ${
         isAppOpen ? 'bg-blue-600/80 text-white' : 'hover:bg-blue-600/30'
-      } transition-colors duration-200 w-20`}
+      } transition-colors duration-200 w-16 sm:w-20`}
       onClick={onClick}
       onDoubleClick={onClick}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
     >
-      <div className="w-12 h-12 flex items-center justify-center mb-1">
+      <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center mb-1">
         <img 
           src={iconUrl} 
           alt={label}
-          className="w-12 h-12 object-contain drop-shadow-lg"
+          className="w-10 h-10 sm:w-12 sm:h-12 object-contain drop-shadow-lg"
         />
       </div>
-      <span className="text-white text-xs text-center px-1 py-0.5 rounded max-w-20 truncate bg-black/70 backdrop-blur-sm border border-white/20">
+      <span className="text-white text-xs text-center px-1 py-0.5 rounded max-w-16 sm:max-w-20 truncate bg-black/70 backdrop-blur-sm border border-white/20">
         {label}
       </span>
     </motion.div>
   );
 };
 
-// Windows XP Taskbar Button
+// Windows XP Taskbar Button - MOBILE RESPONSIVE
 const TaskbarButton = ({ iconUrl, label, onClick, isOpen, isMinimized }) => (
   <motion.button
     whileHover={{ scale: 1.02 }}
     whileTap={{ scale: 0.98 }}
     onClick={onClick}
-    className={`flex items-center gap-2 px-3 py-1 mx-1 min-w-[140px] border-2 ${
+    className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 mx-0.5 sm:mx-1 min-w-[100px] sm:min-w-[140px] border-2 ${
       isOpen && !isMinimized 
         ? 'border-t-gray-300 border-l-gray-300 border-r-white border-b-white bg-[#d4d0c8]' 
         : 'border-t-white border-l-white border-r-gray-600 border-b-gray-600 bg-[#d4d0c8] hover:bg-[#c0bcaa]'
@@ -564,31 +595,31 @@ const TaskbarButton = ({ iconUrl, label, onClick, isOpen, isMinimized }) => (
     <img 
       src={iconUrl} 
       alt={label}
-      className="w-4 h-4 object-contain"
+      className="w-3 h-3 sm:w-4 sm:h-4 object-contain"
     />
-    <span className="text-sm font-medium text-black truncate flex-1">{label}</span>
+    <span className="text-xs sm:text-sm font-medium text-black truncate flex-1 hidden sm:block">{label}</span>
   </motion.button>
 );
 
 // Display Properties Component (Wallpaper Changer)
 const DisplayProperties = ({ onClose, currentWallpaper, onWallpaperChange }) => {
   return (
-    <div className="p-4 bg-[#ece9d8] h-full overflow-auto">
-      <div className="flex justify-between items-center mb-4">
+    <div className="p-3 sm:p-4 bg-[#ece9d8] h-full overflow-auto">
+      <div className="flex justify-between items-center mb-4 flex-col sm:flex-row gap-2 sm:gap-0">
         <h3 className="text-lg font-bold text-blue-800">Display Properties</h3>
         <button 
           onClick={onClose}
-          className="px-3 py-1 bg-red-600 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-red-500"
+          className="px-3 py-1 bg-red-600 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-red-500 text-sm sm:text-base"
         >
           Close
         </button>
       </div>
 
-      <div className="bg-white border border-gray-300 p-4">
+      <div className="bg-white border border-gray-300 p-3 sm:p-4">
         <h4 className="text-md font-bold text-blue-700 mb-3">Desktop Background</h4>
         <p className="text-sm text-gray-600 mb-4">Choose your desktop wallpaper:</p>
         
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
           {Object.entries(WALLPAPERS).map(([key, url]) => (
             <div
               key={key}
@@ -600,18 +631,18 @@ const DisplayProperties = ({ onClose, currentWallpaper, onWallpaperChange }) => 
               onClick={() => onWallpaperChange(key)}
             >
               <div 
-                className="w-full h-24 bg-cover bg-center"
+                className="w-full h-16 sm:h-24 bg-cover bg-center"
                 style={{ backgroundImage: `url(${url})` }}
               />
-              <div className="p-2 text-xs text-center bg-white capitalize">
+              <div className="p-1 sm:p-2 text-xs text-center bg-white capitalize">
                 {key.replace('_', ' ')}
               </div>
             </div>
           ))}
         </div>
 
-        <div className="mt-6 p-3 bg-blue-50 border border-blue-200">
-          <p className="text-sm text-blue-800">
+        <div className="mt-4 sm:mt-6 p-2 sm:p-3 bg-blue-50 border border-blue-200">
+          <p className="text-xs sm:text-sm text-blue-800">
             <strong>Tip:</strong> Click on any wallpaper to preview it on your desktop.
           </p>
         </div>
@@ -620,7 +651,7 @@ const DisplayProperties = ({ onClose, currentWallpaper, onWallpaperChange }) => 
   );
 };
 
-// Enhanced Email Client Component with multiple contact options
+// Enhanced Email Client Component with multiple contact options - MOBILE RESPONSIVE
 const EmailClient = ({ onClose }) => {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
@@ -635,95 +666,95 @@ const EmailClient = ({ onClose }) => {
   };
 
   return (
-    <div className="p-4 bg-[#ece9d8] h-full overflow-auto">
-      <div className="flex justify-between items-center mb-4">
+    <div className="p-3 sm:p-4 bg-[#ece9d8] h-full overflow-auto">
+      <div className="flex justify-between items-center mb-4 flex-col sm:flex-row gap-2 sm:gap-0">
         <h3 className="text-lg font-bold text-blue-800">Contact Me</h3>
         <button 
           onClick={onClose}
-          className="px-3 py-1 bg-red-600 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-red-500"
+          className="px-3 py-1 bg-red-600 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-red-500 text-sm sm:text-base"
         >
           Close
         </button>
       </div>
 
       {/* Quick Contact Buttons */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-6">
         <button 
           onClick={handleSendEmail}
-          className="p-3 bg-blue-600 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-blue-500 flex flex-col items-center"
+          className="p-2 sm:p-3 bg-blue-600 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-blue-500 flex flex-col items-center"
         >
-          <span className="text-2xl mb-1">📧</span>
-          <span className="text-sm font-semibold">Email</span>
+          <span className="text-xl sm:text-2xl mb-1">📧</span>
+          <span className="text-xs sm:text-sm font-semibold">Email</span>
         </button>
         
         <button 
           onClick={handleWhatsApp}
-          className="p-3 bg-green-600 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-green-500 flex flex-col items-center"
+          className="p-2 sm:p-3 bg-green-600 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-green-500 flex flex-col items-center"
         >
-          <span className="text-2xl mb-1">💬</span>
-          <span className="text-sm font-semibold">WhatsApp</span>
+          <span className="text-xl sm:text-2xl mb-1">💬</span>
+          <span className="text-xs sm:text-sm font-semibold">WhatsApp</span>
         </button>
 
         <a 
           href={DATA.contact.linkedin}
           target="_blank"
           rel="noopener noreferrer"
-          className="p-3 bg-blue-700 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-blue-600 flex flex-col items-center text-center"
+          className="p-2 sm:p-3 bg-blue-700 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-blue-600 flex flex-col items-center text-center"
         >
-          <span className="text-2xl mb-1">💼</span>
-          <span className="text-sm font-semibold">LinkedIn</span>
+          <span className="text-xl sm:text-2xl mb-1">💼</span>
+          <span className="text-xs sm:text-sm font-semibold">LinkedIn</span>
         </a>
 
         <a 
           href={DATA.contact.github}
           target="_blank"
           rel="noopener noreferrer"
-          className="p-3 bg-gray-800 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-gray-700 flex flex-col items-center"
+          className="p-2 sm:p-3 bg-gray-800 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-gray-700 flex flex-col items-center"
         >
-          <span className="text-2xl mb-1">🐙</span>
-          <span className="text-sm font-semibold">GitHub</span>
+          <span className="text-xl sm:text-2xl mb-1">🐙</span>
+          <span className="text-xs sm:text-sm font-semibold">GitHub</span>
         </a>
       </div>
 
       {/* Email Form */}
-      <div className="bg-white border border-gray-300 p-4">
+      <div className="bg-white border border-gray-300 p-3 sm:p-4">
         <h4 className="text-md font-bold text-blue-700 mb-3">Send Direct Email</h4>
         
-        <div className="mb-4">
+        <div className="mb-3 sm:mb-4">
           <label className="block text-sm font-semibold mb-1">To:</label>
           <input 
             type="text" 
             value={DATA.contact.email}
             readOnly
-            className="w-full px-2 py-1 border border-gray-400 bg-gray-100"
+            className="w-full px-2 py-1 border border-gray-400 bg-gray-100 text-sm"
           />
         </div>
 
-        <div className="mb-4">
+        <div className="mb-3 sm:mb-4">
           <label className="block text-sm font-semibold mb-1">Subject:</label>
           <input 
             type="text" 
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="Job opportunity / Collaboration"
-            className="w-full px-2 py-1 border border-gray-400"
+            className="w-full px-2 py-1 border border-gray-400 text-sm"
           />
         </div>
 
-        <div className="mb-4">
+        <div className="mb-3 sm:mb-4">
           <label className="block text-sm font-semibold mb-1">Message:</label>
           <textarea 
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            rows="6"
+            rows="4"
             placeholder="Hello Nashid, I was impressed by your portfolio..."
-            className="w-full px-2 py-1 border border-gray-400 resize-none"
+            className="w-full px-2 py-1 border border-gray-400 resize-none text-sm"
           />
         </div>
 
         <button 
           onClick={handleSendEmail}
-          className="px-4 py-2 bg-green-600 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-green-500 font-semibold"
+          className="px-4 py-2 bg-green-600 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-green-500 font-semibold text-sm sm:text-base"
         >
           Send Email
         </button>
@@ -732,7 +763,7 @@ const EmailClient = ({ onClose }) => {
   );
 };
 
-// PDF Resume Viewer Component
+// PDF Resume Viewer Component - MOBILE RESPONSIVE
 const ResumeViewer = ({ onClose }) => {
   const handleDownload = () => {
     const link = document.createElement('a');
@@ -746,25 +777,25 @@ const ResumeViewer = ({ onClose }) => {
   };
 
   return (
-    <div className="p-6 bg-[#ece9d8] h-full overflow-auto">
+    <div className="p-4 sm:p-6 bg-[#ece9d8] h-full overflow-auto">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-800 mb-4">My Resume</h1>
-          <p className="text-gray-700 mb-6">Professional ATS-optimized resume available for viewing and download.</p>
+        <div className="text-center mb-6">
+          <h1 className="text-xl sm:text-3xl font-bold text-blue-800 mb-4">My Resume</h1>
+          <p className="text-gray-700 mb-6 text-sm sm:text-base">Professional ATS-optimized resume available for viewing and download.</p>
           
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-6 sm:mb-8">
             <button 
               onClick={handleView}
-              className="px-6 py-3 bg-blue-600 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-blue-500 font-semibold flex items-center gap-2"
+              className="px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-blue-500 font-semibold flex items-center gap-2 text-sm sm:text-base"
             >
               <span>👁️ View Resume</span>
             </button>
             
             <button 
               onClick={handleDownload}
-              className="px-6 py-3 bg-green-600 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-green-500 font-semibold flex items-center gap-2"
+              className="px-4 sm:px-6 py-2 sm:py-3 bg-green-600 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-green-500 font-semibold flex items-center gap-2 text-sm sm:text-base"
             >
               <span>📥 Download PDF</span>
             </button>
@@ -772,23 +803,23 @@ const ResumeViewer = ({ onClose }) => {
         </div>
 
         {/* Quick Info Preview */}
-        <div className="bg-white border border-gray-300 p-6 shadow-sm mb-6">
-          <h3 className="text-xl font-bold text-blue-800 mb-4 text-center">Quick Overview</h3>
+        <div className="bg-white border border-gray-300 p-4 sm:p-6 shadow-sm mb-4 sm:mb-6">
+          <h3 className="text-lg sm:text-xl font-bold text-blue-800 mb-4 text-center">Quick Overview</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* Contact Info */}
             <div>
-              <h4 className="font-bold text-gray-800 mb-3">Contact Information</h4>
-              <div className="space-y-2 text-sm">
+              <h4 className="font-bold text-gray-800 mb-3 text-sm sm:text-base">Contact Information</h4>
+              <div className="space-y-2 text-xs sm:text-sm">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">Email:</span>
-                  <a href={`mailto:${DATA.contact.email}`} className="text-blue-600 hover:underline">
+                  <a href={`mailto:${DATA.contact.email}`} className="text-blue-600 hover:underline truncate">
                     {DATA.contact.email}
                   </a>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">Phone:</span>
-                  <span>{DATA.contact.phone}</span>
+                  <span className="truncate">{DATA.contact.phone}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">Location:</span>
@@ -799,7 +830,7 @@ const ResumeViewer = ({ onClose }) => {
 
             {/* Key Skills */}
             <div>
-              <h4 className="font-bold text-gray-800 mb-3">Key Technologies</h4>
+              <h4 className="font-bold text-gray-800 mb-3 text-sm sm:text-base">Key Technologies</h4>
               <div className="flex flex-wrap gap-1">
                 {DATA.skills.frontend.slice(0, 4).map(skill => (
                   <span key={skill} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs border border-blue-200">
@@ -816,15 +847,15 @@ const ResumeViewer = ({ onClose }) => {
           </div>
 
           {/* Experience Summary */}
-          <div className="mt-6">
-            <h4 className="font-bold text-gray-800 mb-3">Experience Summary</h4>
+          <div className="mt-4 sm:mt-6">
+            <h4 className="font-bold text-gray-800 mb-3 text-sm sm:text-base">Experience Summary</h4>
             <div className="space-y-3">
               {DATA.experience.slice(0, 2).map((exp, index) => (
                 <div key={index} className="border-l-4 border-blue-500 pl-3">
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start flex-col sm:flex-row gap-1 sm:gap-0">
                     <div>
-                      <h5 className="font-semibold text-gray-800">{exp.company}</h5>
-                      <p className="text-sm text-gray-600">{exp.role}</p>
+                      <h5 className="font-semibold text-gray-800 text-sm sm:text-base">{exp.company}</h5>
+                      <p className="text-xs sm:text-sm text-gray-600">{exp.role}</p>
                     </div>
                     <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                       {exp.period}
@@ -837,9 +868,9 @@ const ResumeViewer = ({ onClose }) => {
         </div>
 
         {/* Note for Recruiters */}
-        <div className="bg-yellow-50 border border-yellow-200 p-4 rounded">
-          <h4 className="font-bold text-yellow-800 mb-2">💡 For Recruiters</h4>
-          <p className="text-sm text-yellow-700">
+        <div className="bg-yellow-50 border border-yellow-200 p-3 sm:p-4 rounded">
+          <h4 className="font-bold text-yellow-800 mb-2 text-sm sm:text-base">💡 For Recruiters</h4>
+          <p className="text-xs sm:text-sm text-yellow-700">
             The full PDF resume contains detailed information about my experience, projects, and technical skills. 
             It's ATS-optimized and ready for your review.
           </p>
@@ -849,7 +880,7 @@ const ResumeViewer = ({ onClose }) => {
   );
 };
 
-// Authentic Windows XP Start Menu
+// Authentic Windows XP Start Menu - MOBILE RESPONSIVE
 const StartMenu = ({ isOpen, onClose, apps, onAppClick, currentWallpaper, onWallpaperChange }) => {
   if (!isOpen) return null;
 
@@ -858,32 +889,32 @@ const StartMenu = ({ isOpen, onClose, apps, onAppClick, currentWallpaper, onWall
       initial={{ y: 10, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 10, opacity: 0 }}
-      className="absolute bottom-10 left-0 w-80 bg-[#d4d0c8] border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 shadow-2xl z-40"
+      className="absolute bottom-10 left-0 w-80 max-w-[90vw] bg-[#d4d0c8] border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 shadow-2xl z-40"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Start Menu Header */}
-      <div className="h-20 bg-gradient-to-b from-[#0a246a] to-[#0a246a] flex items-center px-4">
-        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mr-3 border border-gray-300">
-          <span className="text-xl font-bold text-blue-800">NK</span>
+      <div className="h-16 sm:h-20 bg-gradient-to-b from-[#0a246a] to-[#0a246a] flex items-center px-3 sm:px-4">
+        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full flex items-center justify-center mr-3 border border-gray-300">
+          <span className="text-lg sm:text-xl font-bold text-blue-800">NK</span>
         </div>
         <div className="text-white">
-          <div className="font-bold text-lg">{DATA.name}</div>
-          <div className="text-sm opacity-90">Full Stack Developer</div>
+          <div className="font-bold text-base sm:text-lg">{DATA.name}</div>
+          <div className="text-xs sm:text-sm opacity-90">Full Stack Developer</div>
         </div>
       </div>
 
-      <div className="flex">
+      <div className="flex flex-col sm:flex-row">
         {/* Left Column - System Items */}
-        <div className="flex-1 p-2 border-r border-gray-400">
+        <div className="flex-1 p-2 border-b sm:border-b-0 sm:border-r border-gray-400">
           <div className="space-y-1">
             <button
               onClick={() => {
                 onAppClick("resume");
                 onClose();
               }}
-              className="flex items-center gap-3 p-2 text-left hover:bg-blue-600 hover:text-white transition-colors rounded-sm w-full group"
+              className="flex items-center gap-2 sm:gap-3 p-2 text-left hover:bg-blue-600 hover:text-white transition-colors rounded-sm w-full group"
             >
-              <img src={ICONS.resume} alt="Resume" className="w-6 h-6" />
+              <img src={ICONS.resume} alt="Resume" className="w-5 h-5 sm:w-6 sm:h-6" />
               <div>
                 <div className="text-sm font-medium">My Resume</div>
                 <div className="text-xs text-gray-600 group-hover:text-white/80">PDF Download</div>
@@ -895,9 +926,9 @@ const StartMenu = ({ isOpen, onClose, apps, onAppClick, currentWallpaper, onWall
                 onAppClick("my_computer");
                 onClose();
               }}
-              className="flex items-center gap-3 p-2 text-left hover:bg-blue-600 hover:text-white transition-colors rounded-sm w-full group"
+              className="flex items-center gap-2 sm:gap-3 p-2 text-left hover:bg-blue-600 hover:text-white transition-colors rounded-sm w-full group"
             >
-              <img src={ICONS.my_computer} alt="My Computer" className="w-6 h-6" />
+              <img src={ICONS.my_computer} alt="My Computer" className="w-5 h-5 sm:w-6 sm:h-6" />
               <div>
                 <div className="text-sm font-medium">My Computer</div>
                 <div className="text-xs text-gray-600 group-hover:text-white/80">System Information</div>
@@ -909,9 +940,9 @@ const StartMenu = ({ isOpen, onClose, apps, onAppClick, currentWallpaper, onWall
                 onAppClick("projects");
                 onClose();
               }}
-              className="flex items-center gap-3 p-2 text-left hover:bg-blue-600 hover:text-white transition-colors rounded-sm w-full group"
+              className="flex items-center gap-2 sm:gap-3 p-2 text-left hover:bg-blue-600 hover:text-white transition-colors rounded-sm w-full group"
             >
-              <img src={ICONS.projects} alt="Projects" className="w-6 h-6" />
+              <img src={ICONS.projects} alt="Projects" className="w-5 h-5 sm:w-6 sm:h-6" />
               <div>
                 <div className="text-sm font-medium">Projects</div>
                 <div className="text-xs text-gray-600 group-hover:text-white/80">Portfolio Work</div>
@@ -923,9 +954,9 @@ const StartMenu = ({ isOpen, onClose, apps, onAppClick, currentWallpaper, onWall
                 onAppClick("email");
                 onClose();
               }}
-              className="flex items-center gap-3 p-2 text-left hover:bg-blue-600 hover:text-white transition-colors rounded-sm w-full group"
+              className="flex items-center gap-2 sm:gap-3 p-2 text-left hover:bg-blue-600 hover:text-white transition-colors rounded-sm w-full group"
             >
-              <img src={ICONS.email} alt="Email" className="w-6 h-6" />
+              <img src={ICONS.email} alt="Email" className="w-5 h-5 sm:w-6 sm:h-6" />
               <div>
                 <div className="text-sm font-medium">Contact Me</div>
                 <div className="text-xs text-gray-600 group-hover:text-white/80">Get in Touch</div>
@@ -935,7 +966,7 @@ const StartMenu = ({ isOpen, onClose, apps, onAppClick, currentWallpaper, onWall
         </div>
 
         {/* Right Column - Portfolio Apps */}
-        <div className="w-48 p-2 bg-[#c0bcaa]">
+        <div className="w-full sm:w-48 p-2 bg-[#c0bcaa]">
           <div className="text-xs text-gray-600 font-semibold mb-2">PORTFOLIO</div>
           <div className="space-y-1">
             {apps.map(app => (
@@ -945,9 +976,9 @@ const StartMenu = ({ isOpen, onClose, apps, onAppClick, currentWallpaper, onWall
                   onAppClick(app.id);
                   onClose();
                 }}
-                className="flex items-center gap-3 p-2 text-left hover:bg-blue-600 hover:text-white transition-colors rounded-sm w-full group"
+                className="flex items-center gap-2 sm:gap-3 p-2 text-left hover:bg-blue-600 hover:text-white transition-colors rounded-sm w-full group"
               >
-                <img src={app.iconUrl} alt={app.title} className="w-5 h-5" />
+                <img src={app.iconUrl} alt={app.title} className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span className="text-sm font-medium">{app.title}</span>
               </button>
             ))}
@@ -958,30 +989,30 @@ const StartMenu = ({ isOpen, onClose, apps, onAppClick, currentWallpaper, onWall
   );
 };
 
-// My Computer Content Component
+// My Computer Content Component - MOBILE RESPONSIVE
 const MyComputerContent = () => (
-  <div className="p-4 text-gray-800 bg-[#ece9d8] h-full overflow-auto">
-    <h2 className="text-xl font-bold text-blue-800 text-center mb-6 border-b border-gray-400 pb-2">
+  <div className="p-3 sm:p-4 text-gray-800 bg-[#ece9d8] h-full overflow-auto">
+    <h2 className="text-lg sm:text-xl font-bold text-blue-800 text-center mb-4 sm:mb-6 border-b border-gray-400 pb-2">
       My Computer - System Information
     </h2>
     
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
       {/* Local Disk (C:) - Skills */}
-      <div className="bg-white border border-gray-300 p-4 shadow-sm">
-        <div className="flex items-center gap-3 mb-4">
-          <img src={ICONS.local_disk} alt="Skills Disk" className="w-12 h-12" />
+      <div className="bg-white border border-gray-300 p-3 sm:p-4 shadow-sm">
+        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <img src={ICONS.local_disk} alt="Skills Disk" className="w-8 h-8 sm:w-12 sm:h-12" />
           <div>
-            <h3 className="text-lg font-bold text-blue-800">Skills Disk (C:)</h3>
-            <p className="text-sm text-gray-600">Technical Expertise</p>
+            <h3 className="text-base sm:text-lg font-bold text-blue-800">Skills Disk (C:)</h3>
+            <p className="text-xs sm:text-sm text-gray-600">Technical Expertise</p>
           </div>
         </div>
         
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           <div>
-            <h4 className="font-semibold text-gray-700 mb-2">Frontend:</h4>
+            <h4 className="font-semibold text-gray-700 mb-2 text-sm sm:text-base">Frontend:</h4>
             <div className="flex flex-wrap gap-1">
               {DATA.skills.frontend.map(skill => (
-                <span key={skill} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs border border-blue-200">
+                <span key={skill} className="px-1 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-800 rounded text-xs border border-blue-200">
                   {skill}
                 </span>
               ))}
@@ -989,10 +1020,10 @@ const MyComputerContent = () => (
           </div>
           
           <div>
-            <h4 className="font-semibold text-gray-700 mb-2">Backend:</h4>
+            <h4 className="font-semibold text-gray-700 mb-2 text-sm sm:text-base">Backend:</h4>
             <div className="flex flex-wrap gap-1">
               {DATA.skills.backend.map(skill => (
-                <span key={skill} className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs border border-green-200">
+                <span key={skill} className="px-1 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-800 rounded text-xs border border-green-200">
                   {skill}
                 </span>
               ))}
@@ -1000,10 +1031,10 @@ const MyComputerContent = () => (
           </div>
           
           <div>
-            <h4 className="font-semibold text-gray-700 mb-2">Database:</h4>
+            <h4 className="font-semibold text-gray-700 mb-2 text-sm sm:text-base">Database:</h4>
             <div className="flex flex-wrap gap-1">
               {DATA.skills.database.map(skill => (
-                <span key={skill} className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs border border-purple-200">
+                <span key={skill} className="px-1 sm:px-2 py-0.5 sm:py-1 bg-purple-100 text-purple-800 rounded text-xs border border-purple-200">
                   {skill}
                 </span>
               ))}
@@ -1013,21 +1044,21 @@ const MyComputerContent = () => (
       </div>
 
       {/* Data Disk (D:) - Tools & Cloud */}
-      <div className="bg-white border border-gray-300 p-4 shadow-sm">
-        <div className="flex items-center gap-3 mb-4">
-          <img src={ICONS.local_disk} alt="Tools Disk" className="w-12 h-12" />
+      <div className="bg-white border border-gray-300 p-3 sm:p-4 shadow-sm">
+        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <img src={ICONS.local_disk} alt="Tools Disk" className="w-8 h-8 sm:w-12 sm:h-12" />
           <div>
-            <h3 className="text-lg font-bold text-blue-800">Tools Disk (D:)</h3>
-            <p className="text-sm text-gray-600">Development Tools</p>
+            <h3 className="text-base sm:text-lg font-bold text-blue-800">Tools Disk (D:)</h3>
+            <p className="text-xs sm:text-sm text-gray-600">Development Tools</p>
           </div>
         </div>
         
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           <div>
-            <h4 className="font-semibold text-gray-700 mb-2">Cloud & DevOps:</h4>
+            <h4 className="font-semibold text-gray-700 mb-2 text-sm sm:text-base">Cloud & DevOps:</h4>
             <div className="flex flex-wrap gap-1">
               {DATA.skills.cloud_devops.map(skill => (
-                <span key={skill} className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs border border-orange-200">
+                <span key={skill} className="px-1 sm:px-2 py-0.5 sm:py-1 bg-orange-100 text-orange-800 rounded text-xs border border-orange-200">
                   {skill}
                 </span>
               ))}
@@ -1035,10 +1066,10 @@ const MyComputerContent = () => (
           </div>
           
           <div>
-            <h4 className="font-semibold text-gray-700 mb-2">AI & Integrations:</h4>
+            <h4 className="font-semibold text-gray-700 mb-2 text-sm sm:text-base">AI & Integrations:</h4>
             <div className="flex flex-wrap gap-1">
               {DATA.skills.ai_integrations.map(skill => (
-                <span key={skill} className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs border border-red-200">
+                <span key={skill} className="px-1 sm:px-2 py-0.5 sm:py-1 bg-red-100 text-red-800 rounded text-xs border border-red-200">
                   {skill}
                 </span>
               ))}
@@ -1046,10 +1077,10 @@ const MyComputerContent = () => (
           </div>
           
           <div>
-            <h4 className="font-semibold text-gray-700 mb-2">Payments & Security:</h4>
+            <h4 className="font-semibold text-gray-700 mb-2 text-sm sm:text-base">Payments & Security:</h4>
             <div className="flex flex-wrap gap-1">
               {DATA.skills.payments_security.map(skill => (
-                <span key={skill} className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs border border-yellow-200">
+                <span key={skill} className="px-1 sm:px-2 py-0.5 sm:py-1 bg-yellow-100 text-yellow-800 rounded text-xs border border-yellow-200">
                   {skill}
                 </span>
               ))}
@@ -1060,49 +1091,49 @@ const MyComputerContent = () => (
     </div>
 
     {/* Project Statistics */}
-    <div className="mt-6 bg-white border border-gray-300 p-4 shadow-sm">
-      <h3 className="text-lg font-bold text-blue-800 mb-3">Project Statistics</h3>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded">
-          <div className="text-2xl font-bold text-blue-700">{PROJECTS_DATA.length}</div>
-          <div className="text-sm text-blue-600">Total Projects</div>
+    <div className="mt-4 sm:mt-6 bg-white border border-gray-300 p-3 sm:p-4 shadow-sm">
+      <h3 className="text-base sm:text-lg font-bold text-blue-800 mb-3">Project Statistics</h3>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 text-center">
+        <div className="p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded">
+          <div className="text-lg sm:text-2xl font-bold text-blue-700">{PROJECTS_DATA.length}</div>
+          <div className="text-xs sm:text-sm text-blue-600">Total Projects</div>
         </div>
-        <div className="p-3 bg-green-50 border border-green-200 rounded">
-          <div className="text-2xl font-bold text-green-700">{PROJECTS_DATA.filter(p => p.featured).length}</div>
-          <div className="text-sm text-green-600">Featured</div>
+        <div className="p-2 sm:p-3 bg-green-50 border border-green-200 rounded">
+          <div className="text-lg sm:text-2xl font-bold text-green-700">{PROJECTS_DATA.filter(p => p.featured).length}</div>
+          <div className="text-xs sm:text-sm text-green-600">Featured</div>
         </div>
-        <div className="p-3 bg-purple-50 border border-purple-200 rounded">
-          <div className="text-2xl font-bold text-purple-700">{PROJECTS_DATA.filter(p => p.external).length}</div>
-          <div className="text-sm text-purple-600">Live Demos</div>
+        <div className="p-2 sm:p-3 bg-purple-50 border border-purple-200 rounded">
+          <div className="text-lg sm:text-2xl font-bold text-purple-700">{PROJECTS_DATA.filter(p => p.external).length}</div>
+          <div className="text-xs sm:text-sm text-purple-600">Live Demos</div>
         </div>
-        <div className="p-3 bg-orange-50 border border-orange-200 rounded">
-          <div className="text-2xl font-bold text-orange-700">12+</div>
-          <div className="text-sm text-orange-600">Technologies</div>
+        <div className="p-2 sm:p-3 bg-orange-50 border border-orange-200 rounded">
+          <div className="text-lg sm:text-2xl font-bold text-orange-700">12+</div>
+          <div className="text-xs sm:text-sm text-orange-600">Technologies</div>
         </div>
       </div>
     </div>
 
     {/* Certifications & Highlights */}
-    <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
-      <div className="bg-white border border-gray-300 p-4 shadow-sm">
-        <h3 className="text-lg font-bold text-blue-800 mb-3">Certifications</h3>
+    <div className="mt-4 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+      <div className="bg-white border border-gray-300 p-3 sm:p-4 shadow-sm">
+        <h3 className="text-base sm:text-lg font-bold text-blue-800 mb-3">Certifications</h3>
         <div className="space-y-2">
           {DATA.certifications.map((cert, index) => (
             <div key={index} className="flex items-center gap-2 p-2 hover:bg-gray-50">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-sm">{cert}</span>
+              <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-0.5 sm:mt-1.5 flex-shrink-0"></div>
+              <span className="text-xs sm:text-sm">{cert}</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="bg-white border border-gray-300 p-4 shadow-sm">
-        <h3 className="text-lg font-bold text-blue-800 mb-3">Profile Highlights</h3>
+      <div className="bg-white border border-gray-300 p-3 sm:p-4 shadow-sm">
+        <h3 className="text-base sm:text-lg font-bold text-blue-800 mb-3">Profile Highlights</h3>
         <div className="space-y-2">
           {DATA.highlights.map((highlight, index) => (
             <div key={index} className="flex items-center gap-2 p-2 hover:bg-gray-50">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="text-sm">{highlight}</span>
+              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-0.5 sm:mt-1.5 flex-shrink-0"></div>
+              <span className="text-xs sm:text-sm">{highlight}</span>
             </div>
           ))}
         </div>
@@ -1111,51 +1142,51 @@ const MyComputerContent = () => (
   </div>
 );
 
-// Profile Content Component
+// Profile Content Component - MOBILE RESPONSIVE
 const ProfileContent = () => (
-  <div className="p-4 text-gray-800 bg-[#ece9d8] h-full overflow-auto">
-    <div className="text-center mb-6">
-      <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-2xl font-bold text-white shadow mb-4 border-2 border-gray-300">
+  <div className="p-3 sm:p-4 text-gray-800 bg-[#ece9d8] h-full overflow-auto">
+    <div className="text-center mb-4 sm:mb-6">
+      <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-lg sm:text-2xl font-bold text-white shadow mb-3 sm:mb-4 border-2 border-gray-300">
         NK
       </div>
-      <h1 className="text-2xl font-bold text-blue-800 mb-2">{DATA.name}</h1>
-      <p className="text-green-700 font-semibold mb-4">{DATA.title.split('|')[0]}</p>
-      <p className="text-gray-700 leading-relaxed text-sm max-w-2xl mx-auto">
+      <h1 className="text-lg sm:text-2xl font-bold text-blue-800 mb-2">{DATA.name}</h1>
+      <p className="text-green-700 font-semibold mb-3 sm:mb-4 text-sm sm:text-base">{DATA.title.split('|')[0]}</p>
+      <p className="text-gray-700 leading-relaxed text-xs sm:text-sm max-w-2xl mx-auto">
         {DATA.summary}
       </p>
     </div>
 
     {/* Contact Information */}
-    <div className="bg-white border border-gray-300 p-4 shadow-sm mb-6">
-      <h3 className="text-lg font-bold text-blue-800 mb-3 text-center">Contact Information</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+    <div className="bg-white border border-gray-300 p-3 sm:p-4 shadow-sm mb-4 sm:mb-6">
+      <h3 className="text-base sm:text-lg font-bold text-blue-800 mb-3 text-center">Contact Information</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
         <div className="flex items-center gap-2">
           <span className="font-semibold">📧 Email:</span>
-          <a href={`mailto:${DATA.contact.email}`} className="text-blue-600 hover:underline">
+          <a href={`mailto:${DATA.contact.email}`} className="text-blue-600 hover:underline truncate">
             {DATA.contact.email}
           </a>
         </div>
         <div className="flex items-center gap-2">
           <span className="font-semibold">📞 Phone/WhatsApp:</span>
-          <a href={`https://wa.me/${DATA.contact.whatsapp.replace(/\D/g, '')}`} className="text-green-600 hover:underline">
+          <a href={`https://wa.me/${DATA.contact.whatsapp.replace(/\D/g, '')}`} className="text-green-600 hover:underline truncate">
             {DATA.contact.phone}
           </a>
         </div>
         <div className="flex items-center gap-2">
           <span className="font-semibold">💼 LinkedIn:</span>
-          <a href={DATA.contact.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+          <a href={DATA.contact.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate">
             {DATA.contact.linkedin.split('/').pop()}
           </a>
         </div>
         <div className="flex items-center gap-2">
           <span className="font-semibold">🐙 GitHub:</span>
-          <a href={DATA.contact.github} target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:underline">
+          <a href={DATA.contact.github} target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:underline truncate">
             {DATA.contact.github.split('/').pop()}
           </a>
         </div>
         <div className="flex items-center gap-2">
           <span className="font-semibold">🌐 Portfolio:</span>
-          <a href={DATA.contact.portfolio} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline">
+          <a href={DATA.contact.portfolio} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline truncate">
             {DATA.contact.portfolio.split('//').pop()}
           </a>
         </div>
@@ -1167,39 +1198,39 @@ const ProfileContent = () => (
     </div>
 
     {/* Quick Skills Overview */}
-    <div className="bg-white border border-gray-300 p-4 shadow-sm">
-      <h3 className="text-lg font-bold text-blue-800 mb-3 text-center">Technical Expertise</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+    <div className="bg-white border border-gray-300 p-3 sm:p-4 shadow-sm">
+      <h3 className="text-base sm:text-lg font-bold text-blue-800 mb-3 text-center">Technical Expertise</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
         <div>
-          <h4 className="font-semibold text-gray-700 mb-2">Frontend & Backend</h4>
+          <h4 className="font-semibold text-gray-700 mb-2 text-sm sm:text-base">Frontend & Backend</h4>
           <div className="space-y-1">
             {DATA.skills.frontend.slice(0, 4).map(skill => (
               <div key={skill} className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>{skill}</span>
+                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                <span className="truncate">{skill}</span>
               </div>
             ))}
             {DATA.skills.backend.slice(0, 3).map(skill => (
               <div key={skill} className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>{skill}</span>
+                <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                <span className="truncate">{skill}</span>
               </div>
             ))}
           </div>
         </div>
         <div>
-          <h4 className="font-semibold text-gray-700 mb-2">Tools & Platforms</h4>
+          <h4 className="font-semibold text-gray-700 mb-2 text-sm sm:text-base">Tools & Platforms</h4>
           <div className="space-y-1">
             {DATA.skills.cloud_devops.slice(0, 4).map(skill => (
               <div key={skill} className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                <span>{skill}</span>
+                <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+                <span className="truncate">{skill}</span>
               </div>
             ))}
             {DATA.skills.database.slice(0, 2).map(skill => (
               <div key={skill} className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                <span>{skill}</span>
+                <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
+                <span className="truncate">{skill}</span>
               </div>
             ))}
           </div>
@@ -1209,14 +1240,14 @@ const ProfileContent = () => (
   </div>
 );
 
-// Project Card Component
+// Project Card Component - MOBILE RESPONSIVE
 const ProjectCard = ({ project, onOpenLiveProject, featured }) => {
   return (
-    <div className={`bg-white border border-gray-300 p-4 shadow-sm ${featured ? '' : 'h-full'}`}>
-      <div className="flex justify-between items-start mb-3">
+    <div className={`bg-white border border-gray-300 p-3 sm:p-4 shadow-sm ${featured ? '' : 'h-full'}`}>
+      <div className="flex justify-between items-start mb-2 sm:mb-3">
         <div>
-          <h3 className="text-lg font-bold text-blue-800">{project.title}</h3>
-          <p className="text-green-700 font-semibold text-sm">{project.tagline}</p>
+          <h3 className="text-base sm:text-lg font-bold text-blue-800">{project.title}</h3>
+          <p className="text-green-700 font-semibold text-xs sm:text-sm">{project.tagline}</p>
         </div>
         {project.featured && (
           <span className="px-2 py-1 bg-yellow-200 text-yellow-800 rounded text-xs font-medium border border-yellow-300">
@@ -1225,25 +1256,25 @@ const ProjectCard = ({ project, onOpenLiveProject, featured }) => {
         )}
       </div>
       
-      <p className="text-gray-700 text-sm mb-3 leading-relaxed">{project.description}</p>
+      <p className="text-gray-700 text-xs sm:text-sm mb-2 sm:mb-3 leading-relaxed">{project.description}</p>
       
-      <div className="flex flex-wrap gap-1 mb-3">
+      <div className="flex flex-wrap gap-1 mb-2 sm:mb-3">
         {project.tech.map((tech, idx) => (
           <span 
             key={idx}
-            className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs border border-blue-200"
+            className="px-1 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-800 rounded text-xs border border-blue-200"
           >
             {tech}
           </span>
         ))}
       </div>
       
-      <div className="flex gap-2 mt-4">
+      <div className="flex gap-1 sm:gap-2 mt-3 sm:mt-4">
         <a 
           href={project.github}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-3 py-1 bg-gray-600 text-white text-sm border border-gray-700 hover:bg-gray-500 flex items-center gap-1"
+          className="px-2 sm:px-3 py-1 bg-gray-600 text-white text-xs sm:text-sm border border-gray-700 hover:bg-gray-500 flex items-center gap-1"
         >
           <span>📂 GitHub</span>
         </a>
@@ -1251,7 +1282,7 @@ const ProjectCard = ({ project, onOpenLiveProject, featured }) => {
         {project.external && (
           <button 
             onClick={() => onOpenLiveProject(project.title, project.external)}
-            className="px-3 py-1 bg-green-600 text-white text-sm border border-green-700 hover:bg-green-500 flex items-center gap-1"
+            className="px-2 sm:px-3 py-1 bg-green-600 text-white text-xs sm:text-sm border border-green-700 hover:bg-green-500 flex items-center gap-1"
           >
             <span>🚀 Live Demo</span>
           </button>
@@ -1260,7 +1291,7 @@ const ProjectCard = ({ project, onOpenLiveProject, featured }) => {
       
       {/* Highlight that it's live */}
       {project.external && (
-        <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-700">
+        <div className="mt-2 sm:mt-3 p-1 sm:p-2 bg-green-50 border border-green-200 rounded text-xs text-green-700">
           ✅ <strong>Live Project</strong> - Click "Live Demo" to see it in action!
         </div>
       )}
@@ -1268,17 +1299,17 @@ const ProjectCard = ({ project, onOpenLiveProject, featured }) => {
   );
 };
 
-// Projects Content Component
+// Projects Content Component - MOBILE RESPONSIVE
 const ProjectsContent = ({ onOpenLiveProject }) => (
-  <div className="p-4 text-gray-800 bg-[#ece9d8] h-full overflow-auto">
-    <h2 className="text-xl font-bold text-blue-800 text-center mb-6 border-b border-gray-400 pb-2">
+  <div className="p-3 sm:p-4 text-gray-800 bg-[#ece9d8] h-full overflow-auto">
+    <h2 className="text-lg sm:text-xl font-bold text-blue-800 text-center mb-4 sm:mb-6 border-b border-gray-400 pb-2">
       Portfolio Projects ({PROJECTS_DATA.length} Total)
     </h2>
     
     {/* Featured Projects */}
-    <div className="mb-8">
-      <h3 className="text-lg font-bold text-blue-700 mb-4">🌟 Featured Projects</h3>
-      <div className="space-y-6">
+    <div className="mb-6 sm:mb-8">
+      <h3 className="text-base sm:text-lg font-bold text-blue-700 mb-3 sm:mb-4">🌟 Featured Projects</h3>
+      <div className="space-y-4 sm:space-y-6">
         {PROJECTS_DATA.filter(project => project.featured).map((project, index) => (
           <ProjectCard 
             key={project.id} 
@@ -1292,8 +1323,8 @@ const ProjectsContent = ({ onOpenLiveProject }) => (
 
     {/* Other Projects */}
     <div>
-      <h3 className="text-lg font-bold text-blue-700 mb-4">📁 All Projects</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <h3 className="text-base sm:text-lg font-bold text-blue-700 mb-3 sm:mb-4">📁 All Projects</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
         {PROJECTS_DATA.filter(project => !project.featured).map((project, index) => (
           <ProjectCard 
             key={project.id} 
@@ -1396,7 +1427,7 @@ const TerminalContent = () => {
   };
 
   return (
-    <div className="h-full bg-black text-green-400 font-mono p-4 text-sm overflow-auto">
+    <div className="h-full bg-black text-green-400 font-mono p-3 sm:p-4 text-xs sm:text-sm overflow-auto">
       <div className="space-y-1">
         {terminalHistory.map((line, index) => (
           <div key={index} className="break-words">
@@ -1404,14 +1435,14 @@ const TerminalContent = () => {
           </div>
         ))}
       </div>
-      <div className="flex items-center mt-4">
-        <span className="text-white mr-2 font-bold whitespace-nowrap">C:\Users\Nashid&gt;</span>
+      <div className="flex items-center mt-3 sm:mt-4">
+        <span className="text-white mr-2 font-bold whitespace-nowrap text-xs sm:text-sm">C:\Users\Nashid&gt;</span>
         <input
           type="text"
           value={terminalInput}
           onChange={(e) => setTerminalInput(e.target.value)}
           onKeyPress={handleKeyPress}
-          className="flex-1 bg-transparent border-none outline-none text-white caret-green-400"
+          className="flex-1 bg-transparent border-none outline-none text-white caret-green-400 text-xs sm:text-sm"
           placeholder="Type command..."
           autoFocus
         />
@@ -1420,34 +1451,34 @@ const TerminalContent = () => {
   );
 };
 
-// Documents Content Component
+// Documents Content Component - MOBILE RESPONSIVE
 const DocumentsContent = () => (
-  <div className="p-4 text-gray-800 bg-[#ece9d8] h-full overflow-auto">
-    <h2 className="text-xl font-bold text-blue-800 text-center mb-6 border-b border-gray-400 pb-2">
+  <div className="p-3 sm:p-4 text-gray-800 bg-[#ece9d8] h-full overflow-auto">
+    <h2 className="text-lg sm:text-xl font-bold text-blue-800 text-center mb-4 sm:mb-6 border-b border-gray-400 pb-2">
       Professional Experience
     </h2>
     
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {DATA.experience.map((exp, index) => (
         <div
           key={exp.company}
-          className="bg-white border border-gray-300 p-4 shadow-sm"
+          className="bg-white border border-gray-300 p-3 sm:p-4 shadow-sm"
         >
-          <div className="flex justify-between items-start mb-3 flex-col sm:flex-row gap-2">
+          <div className="flex justify-between items-start mb-2 sm:mb-3 flex-col sm:flex-row gap-1 sm:gap-2">
             <div>
-              <h3 className="text-lg font-bold text-blue-800">{exp.company}</h3>
-              <p className="text-green-700 font-semibold">{exp.role}</p>
+              <h3 className="text-base sm:text-lg font-bold text-blue-800">{exp.company}</h3>
+              <p className="text-green-700 font-semibold text-sm sm:text-base">{exp.role}</p>
             </div>
-            <span className="text-gray-600 font-medium bg-gray-200 px-2 py-1 rounded text-sm">
+            <span className="text-gray-600 font-medium bg-gray-200 px-2 py-1 rounded text-xs sm:text-sm">
               {exp.period}
             </span>
           </div>
           
-          <div className="space-y-2">
+          <div className="space-y-1 sm:space-y-2">
             {exp.points.map((point, idx) => (
               <div key={idx} className="flex items-start gap-2">
-                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
-                <span className="text-gray-700 text-sm leading-relaxed">{point}</span>
+                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1 sm:mt-1.5 flex-shrink-0"></div>
+                <span className="text-gray-700 text-xs sm:text-sm leading-relaxed">{point}</span>
               </div>
             ))}
           </div>
@@ -1840,7 +1871,7 @@ export default function App() {
       </div>
 
       {/* Desktop Icons */}
-      <div className="absolute left-0 top-0 h-full flex flex-col items-start space-y-2 p-4 z-10">
+      <div className="absolute left-0 top-0 h-full flex flex-col items-start space-y-2 p-2 sm:p-4 z-10">
         {desktopIcons.map((icon) => (
           <DesktopIcon
             key={icon.id}
@@ -1865,11 +1896,11 @@ export default function App() {
             e.stopPropagation();
             setStartMenuOpen(!startMenuOpen);
           }}
-          className={`h-8 px-3 bg-gradient-to-b from-[#00cc00] to-[#009900] border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 text-white font-bold text-sm flex items-center gap-2 hover:from-[#00ee00] hover:to-[#00bb00] ${
-            isMobile ? 'min-w-[70px]' : 'min-w-[90px]'
+          className={`h-8 px-2 sm:px-3 bg-gradient-to-b from-[#00cc00] to-[#009900] border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 text-white font-bold text-xs sm:text-sm flex items-center gap-1 sm:gap-2 hover:from-[#00ee00] hover:to-[#00bb00] ${
+            isMobile ? 'min-w-[60px]' : 'min-w-[90px]'
           }`}
         >
-          <div className="w-5 h-5 bg-white flex items-center justify-center text-green-600 font-bold text-xs">start</div>
+          <div className="w-4 h-4 sm:w-5 sm:h-5 bg-white flex items-center justify-center text-green-600 font-bold text-xs">start</div>
           {!isMobile && "Start"}
         </button>
 
@@ -1915,7 +1946,7 @@ export default function App() {
         </div>
 
         {/* System Tray */}
-        <div className="flex items-center gap-1 px-2 h-8 bg-gradient-to-b from-[#0a5c9e] to-[#0a78c2] border-2 border-t-gray-400 border-l-gray-400 border-r-white border-b-white min-w-[70px] justify-center">
+        <div className="flex items-center gap-1 px-2 h-8 bg-gradient-to-b from-[#0a5c9e] to-[#0a78c2] border-2 border-t-gray-400 border-l-gray-400 border-r-white border-b-white min-w-[60px] sm:min-w-[70px] justify-center">
           <div className="text-white text-xs font-medium whitespace-nowrap">
             {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </div>
