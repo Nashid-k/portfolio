@@ -215,6 +215,9 @@ const PROJECTS_DATA = [
   }
 ];
 
+// PDF Resume Path - ADD YOUR PDF PATH HERE
+const RESUME_PDF_PATH = "./public/Nashid_MERN_STACK.pdf"; 
+
 // Windows XP style window controls
 const CloseIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -729,115 +732,117 @@ const EmailClient = ({ onClose }) => {
   );
 };
 
-// Resume Viewer Component (Professional ATS-style)
+// PDF Resume Viewer Component
 const ResumeViewer = ({ onClose }) => {
-  const handlePrint = () => {
-    window.print();
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = RESUME_PDF_PATH;
+    link.download = 'Nashid_K_Resume.pdf';
+    link.click();
+  };
+
+  const handleView = () => {
+    window.open(RESUME_PDF_PATH, '_blank');
   };
 
   return (
-    <div className="p-6 bg-white h-full overflow-auto">
+    <div className="p-6 bg-[#ece9d8] h-full overflow-auto">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-6 border-b pb-4">
-          <h1 className="text-3xl font-bold text-gray-800 uppercase">{DATA.name}</h1>
-          <h2 className="text-lg text-gray-600 mt-2">{DATA.title}</h2>
-          <div className="flex flex-wrap justify-center gap-3 mt-3 text-sm text-gray-700">
-            <span>📧 {DATA.contact.email}</span>
-            <span>📞 {DATA.contact.phone}</span>
-            <span>📍 {DATA.contact.location}</span>
-          </div>
-          <div className="flex flex-wrap justify-center gap-3 mt-2 text-sm">
-            <a href={DATA.contact.linkedin} className="text-blue-600 hover:underline">LinkedIn</a>
-            <a href={DATA.contact.github} className="text-gray-700 hover:underline">GitHub</a>
-            <a href={DATA.contact.portfolio} className="text-green-600 hover:underline">Portfolio</a>
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-blue-800 mb-4">My Resume</h1>
+          <p className="text-gray-700 mb-6">Professional ATS-optimized resume available for viewing and download.</p>
+          
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+            <button 
+              onClick={handleView}
+              className="px-6 py-3 bg-blue-600 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-blue-500 font-semibold flex items-center gap-2"
+            >
+              <span>👁️ View Resume</span>
+            </button>
+            
+            <button 
+              onClick={handleDownload}
+              className="px-6 py-3 bg-green-600 text-white border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-green-500 font-semibold flex items-center gap-2"
+            >
+              <span>📥 Download PDF</span>
+            </button>
           </div>
         </div>
 
-        {/* Professional Summary */}
-        <section className="mb-6">
-          <h3 className="text-xl font-bold uppercase border-b pb-2 mb-4 text-gray-800">Professional Summary</h3>
-          <p className="text-gray-700 leading-relaxed">{DATA.summary}</p>
-        </section>
-
-        {/* Technical Skills */}
-        <section className="mb-6">
-          <h3 className="text-xl font-bold uppercase border-b pb-2 mb-4 text-gray-800">Technical Skills</h3>
-          <div className="space-y-3">
+        {/* Quick Info Preview */}
+        <div className="bg-white border border-gray-300 p-6 shadow-sm mb-6">
+          <h3 className="text-xl font-bold text-blue-800 mb-4 text-center">Quick Overview</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Contact Info */}
             <div>
-              <strong>Frontend:</strong> {DATA.skills.frontend.join(', ')}
-            </div>
-            <div>
-              <strong>Backend:</strong> {DATA.skills.backend.join(', ')}
-            </div>
-            <div>
-              <strong>Database:</strong> {DATA.skills.database.join(', ')}
-            </div>
-            <div>
-              <strong>Cloud/DevOps:</strong> {DATA.skills.cloud_devops.join(', ')}
-            </div>
-            <div>
-              <strong>AI/Integrations:</strong> {DATA.skills.ai_integrations.join(', ')}
-            </div>
-            <div>
-              <strong>Payments/Security:</strong> {DATA.skills.payments_security.join(', ')}
-            </div>
-          </div>
-        </section>
-
-        {/* Professional Experience */}
-        <section className="mb-6">
-          <h3 className="text-xl font-bold uppercase border-b pb-2 mb-4 text-gray-800">Professional Experience</h3>
-          <div className="space-y-6">
-            {DATA.experience.map((exp, index) => (
-              <div key={index} className="border-l-4 border-blue-500 pl-4">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2">
-                  <div>
-                    <h4 className="font-bold text-lg text-gray-800">{exp.company}</h4>
-                    <p className="text-gray-700 font-semibold">{exp.role}</p>
-                  </div>
-                  <span className="text-gray-600 bg-gray-100 px-2 py-1 rounded text-sm mt-1 sm:mt-0">
-                    {exp.period}
-                  </span>
+              <h4 className="font-bold text-gray-800 mb-3">Contact Information</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">Email:</span>
+                  <a href={`mailto:${DATA.contact.email}`} className="text-blue-600 hover:underline">
+                    {DATA.contact.email}
+                  </a>
                 </div>
-                <ul className="list-disc list-inside space-y-1 text-gray-700">
-                  {exp.points.map((point, idx) => (
-                    <li key={idx}>{point}</li>
-                  ))}
-                </ul>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">Phone:</span>
+                  <span>{DATA.contact.phone}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">Location:</span>
+                  <span>{DATA.contact.location}</span>
+                </div>
               </div>
-            ))}
+            </div>
+
+            {/* Key Skills */}
+            <div>
+              <h4 className="font-bold text-gray-800 mb-3">Key Technologies</h4>
+              <div className="flex flex-wrap gap-1">
+                {DATA.skills.frontend.slice(0, 4).map(skill => (
+                  <span key={skill} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs border border-blue-200">
+                    {skill}
+                  </span>
+                ))}
+                {DATA.skills.backend.slice(0, 2).map(skill => (
+                  <span key={skill} className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs border border-green-200">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
-        </section>
 
-        {/* Certifications */}
-        <section className="mb-6">
-          <h3 className="text-xl font-bold uppercase border-b pb-2 mb-4 text-gray-800">Certifications</h3>
-          <ul className="list-disc list-inside space-y-1 text-gray-700">
-            {DATA.certifications.map((cert, index) => (
-              <li key={index}>{cert}</li>
-            ))}
-          </ul>
-        </section>
+          {/* Experience Summary */}
+          <div className="mt-6">
+            <h4 className="font-bold text-gray-800 mb-3">Experience Summary</h4>
+            <div className="space-y-3">
+              {DATA.experience.slice(0, 2).map((exp, index) => (
+                <div key={index} className="border-l-4 border-blue-500 pl-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h5 className="font-semibold text-gray-800">{exp.company}</h5>
+                      <p className="text-sm text-gray-600">{exp.role}</p>
+                    </div>
+                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                      {exp.period}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
-        {/* Profile Highlights */}
-        <section className="mb-6">
-          <h3 className="text-xl font-bold uppercase border-b pb-2 mb-4 text-gray-800">Profile Highlights</h3>
-          <ul className="list-disc list-inside space-y-1 text-gray-700">
-            {DATA.highlights.map((highlight, index) => (
-              <li key={index}>{highlight}</li>
-            ))}
-          </ul>
-        </section>
-
-        {/* Print Button */}
-        <div className="text-center mt-8">
-          <button 
-            onClick={handlePrint}
-            className="px-6 py-3 bg-blue-600 text-white font-semibold border-2 border-t-white border-l-white border-r-gray-600 border-b-gray-600 hover:bg-blue-500"
-          >
-            🖨️ Print Resume
-          </button>
+        {/* Note for Recruiters */}
+        <div className="bg-yellow-50 border border-yellow-200 p-4 rounded">
+          <h4 className="font-bold text-yellow-800 mb-2">💡 For Recruiters</h4>
+          <p className="text-sm text-yellow-700">
+            The full PDF resume contains detailed information about my experience, projects, and technical skills. 
+            It's ATS-optimized and ready for your review.
+          </p>
         </div>
       </div>
     </div>
@@ -881,7 +886,7 @@ const StartMenu = ({ isOpen, onClose, apps, onAppClick, currentWallpaper, onWall
               <img src={ICONS.resume} alt="Resume" className="w-6 h-6" />
               <div>
                 <div className="text-sm font-medium">My Resume</div>
-                <div className="text-xs text-gray-600 group-hover:text-white/80">Professional CV</div>
+                <div className="text-xs text-gray-600 group-hover:text-white/80">PDF Download</div>
               </div>
             </button>
 
@@ -1327,6 +1332,7 @@ const TerminalContent = () => {
           "  skills    - Show technical skills",
           "  experience- Work experience",
           "  contact   - Contact information",
+          "  resume    - Get resume info",
           "  clear     - Clear terminal",
           "  help      - Show this help"
         );
@@ -1361,6 +1367,12 @@ const TerminalContent = () => {
         newHistory.push(`🐙 GitHub: ${DATA.contact.github}`);
         newHistory.push(`🌐 Portfolio: ${DATA.contact.portfolio}`);
         newHistory.push(`📍 Location: ${DATA.contact.location}`);
+        break;
+      case 'resume':
+        newHistory.push("📄 Resume Available:");
+        newHistory.push("   View: Click 'My Resume' on desktop");
+        newHistory.push("   Download: PDF format available");
+        newHistory.push("   ATS-optimized professional resume");
         break;
       case 'clear':
         setTerminalHistory([]);
@@ -1509,7 +1521,7 @@ export default function App() {
       maximized: false,
       zIndex: 10,
       position: { x: 450, y: 450 },
-      size: { width: 800, height: 900 }
+      size: { width: 600, height: 500 }
     }
   });
 
